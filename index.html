@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Умное домашнее задание</title>
+<style>
+:root{--bg:#f6f7fb;--c:#fff;--t:#1d2433;--m:#6b7385;--p:#4f46e5;--b:#e3e6ee;--e:#16a34a;--md:#d97706;--h:#dc2626;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#12141c;--c:#1c1f2b;--t:#e8eaf2;--m:#9aa2b5;--b:#2c3142}}
+:root[data-theme=dark]{--bg:#12141c;--c:#1c1f2b;--t:#e8eaf2;--m:#9aa2b5;--b:#2c3142}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--t);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#app{max-width:880px;margin:0 auto;padding:16px}
+.card{background:var(--c);border:1px solid var(--b);border-radius:14px;padding:16px;margin-bottom:14px}
+h1{margin:0 0 4px;font-size:22px}h2{margin:0 0 10px;font-size:17px}
+.m{color:var(--m)}.h{color:var(--h)}
+input,select,button{font:inherit;padding:9px 11px;border-radius:9px;border:1px solid var(--b);background:var(--bg);color:var(--t);margin:3px 0;max-width:100%}
+input[type=checkbox]{width:20px;height:20px;margin:0 10px 0 0}
+button{background:var(--p);color:#fff;border:0;cursor:pointer}
+button.g{background:transparent;color:var(--p);border:1px solid var(--p)}
+button.r{background:var(--h)}button.s{padding:5px 9px;font-size:13px}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.f{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.f input{flex:1;min-width:130px}
+.row{display:flex;align-items:center;gap:6px;padding:10px 0;border-top:1px solid var(--b)}
+.row>div{flex:1;min-width:0}
+.bd{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;color:#fff}
+.d1{background:var(--e)}.d2{background:var(--md)}.d3{background:var(--h)}
+.pg{height:8px;background:var(--b);border-radius:9px;overflow:hidden;margin-top:6px}.pg i{display:block;height:100%;background:var(--e)}
+.ch{background:var(--bg);color:var(--t);border:1px solid var(--b)}.ch.on{background:var(--p);color:#fff}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{text-align:left;padding:8px;border-top:1px solid var(--b);white-space:nowrap}
+</style></head><body><div id="app"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DN=['','Лёгкое','Среднее','Сложное'];
+const fmt=t=>t?new Date(t).toLocaleString('ru-RU',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+let D,me=null,adm=false,flt='all',ed=null;
+function load(){try{D=JSON.parse(localStorage.getItem('hw'))}catch(e){}D=D||{users:{},tasks:[],id:1}}
+function save(){try{localStorage.setItem('hw',JSON.stringify(D))}catch(e){}}
+function log(u,a){const x=D.users[u];x.log.unshift({t:Date.now(),a});x.log=x.log.slice(0,50);x.last=Date.now();save()}
+const bd=d=>`<span class="bd d${d}">${DN[d]}</span>`;
+function pr(t){const d=Math.ceil((new Date(t.due)-Date.now())/864e5);return t.diff*2+(isNaN(d)?0:d<=0?12:Math.max(0,8-d))}
+
+function loginH(e){return `<div class="card" style="max-width:380px;margin:7vh auto"><h1>📚 Умное д/з</h1>
+<p class="m">Планируй задания по сложности и срокам</p>
+<input id="n" placeholder="Ваше имя" style="width:100%"><button onclick="login()" style="width:100%">Войти как ученик</button>
+<hr style="border:0;border-top:1px solid var(--b);margin:14px 0">
+<input id="pw" type="password" placeholder="Пароль админа (admin123)" style="width:100%"><button class="g" onclick="alogin()" style="width:100%">Войти как админ</button>
+<p id="err" class="h">${e||''}</p></div>`}
+
+function userH(){
+ const T=D.tasks.filter(t=>t.user===me),done=T.filter(t=>t.done).length,pc=T.length?Math.round(done/T.length*100):0;
+12:45
+const open=T.filter(t=>!t.done&&(flt=='all'||t.diff==flt)).sort((a,b)=>pr(b)-pr(a));
+ const fin=T.filter(t=>t.done);
+ const row=t=>`<div class="row"><input type="checkbox" ${t.done?'checked':''} onchange="tg(${t.id})"><div><b ${t.done?'class="m" style="text-decoration:line-through"':''}>${esc(t.title)}</b><br><span class="m">${esc(t.subj)} · до ${esc(t.due||'—')}</span> ${bd(t.diff)}${t.note?`<br><span class="h">✎ Админ: ${esc(t.note)}</span>`:''}</div><button class="g s" onclick="del(${t.id})">✕</button></div>`;
+ return `<div class="bar"><div><h1>Привет, ${esc(me)}!</h1><span class="m">Выполнено ${done} из ${T.length}</span></div><button class="g" onclick="out()">Выйти</button></div>
+<div class="card"><div class="pg"><i style="width:${pc}%"></i></div></div>
+<div class="card"><h2>Новое задание</h2><div class="f"><input id="ti" placeholder="Что сделать?"><input id="su" placeholder="Предмет">
+<select id="di"><option value="1">Лёгкое</option><option value="2" selected>Среднее</option><option value="3">Сложное</option></select><input id="du" type="date"><button onclick="add()">Добавить</button></div></div>
+<div class="card"><h2>Умный план</h2><p class="m">Порядок учитывает сложность и близость срока — сверху то, за что браться первым.</p>
+<div class="f">${[['all','Все'],[1,'Лёгкие'],[2,'Средние'],[3,'Сложные']].map(([k,l])=>`<button class="s ch ${flt==k?'on':''}" onclick="setF('${k}')">${l}</button>`).join('')}</div>
+${open.map(row).join('')||'<p class="m">Заданий нет 🎉 </p>'}</div>
+${fin.length?`<div class="card"><h2>Готово</h2>${fin.map(row).join('')}</div>`:''}`}
+
+function adminH(){
+ const U=Object.entries(D.users);
+ const feed=U.flatMap(([n,u])=>u.log.map(l=>({n,...l}))).sort((a,b)=>b.t-a.t).slice(0,25);
+ const e=ed!==null?D.tasks.find(t=>t.id===ed):null;
+ return `<div class="bar"><h1>🛠 Админ-панель</h1><button class="g" onclick="out()">Выйти</button></div>
+<div class="card"><h2>Пользователи</h2><div class="tw"><table><tr><th>Имя</th><th>Активность</th><th>Заданий</th><th>Статус</th><th></th></tr>
+${U.map(([n,u])=>`<tr><td>${esc(n)}</td><td>${fmt(u.last)}</td><td>${D.tasks.filter(t=>t.user===n).length}</td><td class="${u.blocked?'h':''}">${u.blocked?'Заблокирован':'Активен'}</td>
+<td><button class="s ${u.blocked?'':'r'}" data-n="${esc(n)}" onclick="blk(this.dataset.n)">${u.blocked?'Разблокировать':'Заблокировать'}</button></td></tr>`).join('')||'<tr><td colspan="5" class="m">Пока нет пользователей</td></tr>'}</table></div></div>
+<div class="card"><h2>Лента активности</h2>${feed.map(l=>`<div class="row"><div><b>${esc(l.n)}</b> — ${esc(l.a)}</div><span class="m">${fmt(l.t)}</span></div>`).join('')||'<p class="m">Событий нет</p>'}</div>
+${e?`<div class="card"><h2>Правка задания (${esc(e.user)})</h2><div class="f"><input id="et" value="${esc(e.title)}"><input id="es" value="${esc(e.subj)}">
+<select id="ed">${[1,2,3].map(i=>`<option value="${i}" ${e.diff==i?'selected':''}>${DN[i]}</option>`).join('')}</select><input id="eu" type="date" value="${esc(e.due)}"></div>
+<input id="eo" placeholder="Комментарий для ученика" value="${esc(e.note)}" style="width:100%"><br><button onclick="sv()">Сохранить</button> <button class="g" onclick="ed=null;render()">Отмена</button></div>`:''}
+<div class="card"><h2>Все задания</h2>${D.tasks.map(t=>`<div class="row"><div><b>${esc(t.title)}</b> ${bd(t.diff)}<br><span class="m">${esc(t.user)} · ${esc(t.subj)} · до ${esc(t.due||'—')} ${t.done?'· ✓':''}</span></div><button class="s" onclick="ed=${t.id};render()">Править</button></div>`).join('')||'<p class="m">Заданий нет</p>'}</div>`}
+
+function render(){load();const A=$('#app');
+ if(me&&D.users[me]&&D.users[me].blocked){me=null;A.innerHTML=loginH('Ваш аккаунт заблокирован администратором');return}
+ A.innerHTML=adm?adminH():me?userH():loginH('')}
+function login(){const n=$('#n').value.trim();if(!n)return;load();
+ if(!D.users[n])D.users[n]={log:[],blocked:false,last:0};
+12:45
+if(D.users[n].blocked){$('#err').textContent='Аккаунт заблокирован администратором';return}
+ me=n;log(n,'Вход в систему');render()}
+function alogin(){if($('#pw').value==='admin123'){adm=true;render()}else $('#err').textContent='Неверный пароль'}
+function out(){if(me){load();log(me,'Выход')}me=null;adm=false;render()}
+function add(){const t=$('#ti').value.trim();if(!t)return;load();
+ D.tasks.push({id:D.id++,user:me,title:t,subj:$('#su').value.trim()||'Без предмета',diff:+$('#di').value,due:$('#du').value,done:false,note:''});
+ log(me,`Добавил задание «${t}» (${DN[$('#di').value]})`);render()}
+function tg(id){load();const t=D.tasks.find(x=>x.id===id);t.done=!t.done;log(me,`${t.done?'Выполнил':'Вернул в работу'}: «${t.title}»`);render()}
+function del(id){load();const t=D.tasks.find(x=>x.id===id);D.tasks=D.tasks.filter(x=>x.id!==id);log(me,`Удалил задание «${t.title}»`);render()}
+function setF(f){flt=f;render()}
+function blk(n){load();const u=D.users[n];u.blocked=!u.blocked;u.log.unshift({t:Date.now(),a:u.blocked?'Заблокирован админом':'Разблокирован админом'});save();render()}
+function sv(){load();const t=D.tasks.find(x=>x.id===ed);
+ Object.assign(t,{title:$('#et').value.trim()||t.title,subj:$('#es').value,diff:+$('#ed').value,due:$('#eu').value,note:$('#eo').value});
+ D.users[t.user].log.unshift({t:Date.now(),a:`Админ изменил задание «${t.title}»`});save();ed=null;render()}
+render();
+setInterval(()=>{const a=document.activeElement;if(!a||!['INPUT','SELECT'].includes(a.tagName))render()},4000);
+</script></body></html>
+
+
+
+
